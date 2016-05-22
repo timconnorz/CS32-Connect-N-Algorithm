@@ -1,0 +1,336 @@
+Tim Connors
+CS 32 - Smallberg
+Project 3 REPORT
+5/20/16
+
+/////////////////////////////	*pseudocode provided below
+	SCAFFOLDIMPL		
+////////////////////////////
+
+For the ScaffoldImpl class, i created the following private variables:
+
+	int nCols - 					the number of columns in the scaffold
+
+	int nLevs - 					the number of rows in the scaffold
+
+	vector<int>* board - 				to dynamically allocate space for a 1D vector 
+							which will represent each location on the board
+
+	stack<int> moveStack -				a stack which keeps track of the moves made so 
+							that undoing multiple moves is easy 
+
+
+The following is a description of the functions of ScaffoldImpl class:
+
+	ScaffoldImpl(int nColumns, int nLevels) -	sets the cols and levs. creates a new board vector and fills all spots 
+							with the integer VACANT. 
+
+	cols() -					returns the number of columns
+
+	levels() - 					returns the number of levels
+
+	isValid(int col) -				checks if the column is a valid move and returns the level that the chip 
+							will fall into when placed
+
+	numberEmpty() -					returns the number of VACANT integers in the board
+
+	checkerAt(int column, int level) -		returns the integer at that column and level by translating those two
+							coordinates into single index of board
+
+	display() -					prints out board to the console in the correct formatting
+
+	makeMove(int column, int color) -		returns 0 if the move is not valid, otherwise it finds the top most empty
+							space on the scaffold in 'column' and fills that spot with 'color'. 
+							Pushes this column to the moveStack member variable
+
+	undoMove() - 					sets the position of the last move  - moveStack.top() - back to VACANT 
+							pops the top off the moveStack and returns the column. returns 0 if failure
+
+
+/////////////////////////////
+	 GAMEIMPL		
+////////////////////////////
+
+For the GameImpl class, i created the following private variables:
+
+	Scaffold* scaf -				to dynamically allocate a scaffold for the game during runtime
+
+	int numToWin -					the number one needs to get 'in a row' to win the game
+
+	Player* red - 					a pointer to the red player 
+
+	Player* black					a pointer to the black player
+
+	bool turn - 					either 0 (Red) or 1 (Black) to indicate who's turn it is at any given time
+
+	int lastMove					keeps track of the column of the most recent move
+
+The following is a description of the fuctions of the GameImpl class:
+
+	GameImpl(int nColumns, int nLevels, 
+	int N, Player* red, Player* black) - 		creates a new game, creating two new players and a new scaffold with nColumns
+							and nLevels. sets the numToWin to N
+
+*	completed(int & winner) -			checks the scaffold for a win by looking at the most recent move and analyzing
+							it for a horizontal, veritcal, or diagonal victory. Returns 1 if a player has 
+							won the game and updates 'winner'. Returns -1 if the scaffold is full (ie a tie)
+							returns 0 if not yet complete
+
+	takeTurn() - 					chooses the best move for the player calling each player's chooseMove function
+							then makes that move, updating the scaffold, setting lastMove, and changing turn
+
+	play()						starts the game, taking turns until the game is completed then displays the winner 
+							or tie game
+
+	checkerAt(int c, int r) - 			returns the integer value of the space at column c and level r. Either VACANT, RED
+							or BLACK
+
+/////////////////////////////
+	   PLAYER
+////////////////////////////
+
+The following is a description of the three virtual 'chooseMove' functions of Player:
+
+	HumanPlayerIMPL::chooseMove(const Scaffold& s, 
+	int N, int color) - 				asks the human player to choose a column, checks the validity of that column, 
+							and makes the  move to that column. 
+	
+	BadPlayerImpl::chooseMove(const Scaffold& s, 
+	int N, int color) - 				places a checker in the first available spot in the board
+
+*	SmartPlayerImpl::chooseMove(const Scaffold& s,
+	int N, int color) -				involves three separate helper functions. listed below. chooseMove checks if it is 
+							the first player to take a turn and places a checker in the middle spot if so. 
+							otherwise it calls bestMove
+
+			
+*		bestMove(Scaffold s, int N, int color) - 		loops through each possible move (ie each available column), makes that move, and if 
+									the game has ended, exits the loop and returns that column. Otherwise it calls humanMove
+									to predict the human's move after the move just made. before going into the next iteration
+									of the loop, it compares score and stores it if it is higher than the previous score. Returns
+									the column which resulted in the highes score.
+
+*		humanMove(Scaffold& s, int color, int& winner,
+		int N, double& score, int& depth, int& time) - 		loops through each possible move. inside the for loop it makes that move, checks for 
+									completeness, if so updates score by subtracting an integer which factors in the depth
+									if not complete, calls the computerMove function with the same parameters except '!color'
+									instead of 'color'. undoes the move at the very end of the for loop
+		
+*		computerMove(Scaffold& s, int color, int& winner,
+		int N, double& score, int& depth, int& time) - 		functions in the same way as the humanMove function except it adds an integer to score
+									when the game is completed by the computer, factoring in the depth. 
+
+
+/////////////////////////////
+     SUPPORT FUNCTIONS
+////////////////////////////
+
+The following are functions defined in support.cpp which helped me in my implementation of this game:
+
+	
+	completed(Scaffold scaf, int& winner, 
+	int numToWin, int turn, int lastMove) - 	Checks the scaf for completeness. Essentially identical to the GameImpl class
+							function of the same name. Used in the PlayerImpl derived classes
+
+	
+
+
+
+///////////////////////////////////////////////////////
+		     PSEUDOCODE				
+//////////////////////////////////////////////////////
+
+
+	bool Game::completed(int & winner) - 		if there are not enough peices on the board for a win to be possible
+								return false
+							set i and j to the column and row of the most recently moved peice
+							check for a vertical win:
+								while the peice below is the right color, add one to the count
+								if count is equal to the numToWin, return 1 and set the winner to the color
+								reset i and j and count
+								check for a horizontal win:
+								while there is a peice to the left with the matching color, add one to count
+								while there is a peice to the right with the matching color, add one to count
+							if count is equal to the numToWin, return 1 and set the winner to the color
+							set i and j to the lower left corner and count to zero
+							check for a diagonal victory from lower left to upper right:
+								loop through the possible starting positions to form a sequence of winning colors
+									if there is a checker at that spot with the matching color, add one to num
+									while the checker to the upper right is also the matching color, add one to num
+									if count is equal to the numToWin return 1 and set winner to color
+							check for a diagonal victory from upper left to lower right:
+								loop through the possible starting positions to form a sequence of winning colors
+									if there is a checker at that spot with the matching color, add one to num
+									while the checker to the lower right is also the matching color, add one to num
+									if count is equal to the numToWin return 1 and set winner to color
+							check for a tie
+								if the number of empty spaces is zero, return -1 
+							else return 0
+	
+	
+
+	int SmartPlayerImpl::chooseMove(const 
+	Scaffold& s, int N, int color) -		if the number empty is equal to cols * levels then you are the first to move and put the peice
+							in the middle. return bestMove function
+
+
+
+	int bestMove(Scaffold s, int N, int color)	for each available column
+								make the move
+								if completed and if the winner is the matching color (ie not a tie) return the column 
+								else call humanMove function
+								if the score is greater than the previously stored score, update it
+								undo the move
+							return the column which resulted in the highest score		
+
+
+
+	void humanMove(Scaffold& s, int color, 
+	int& winner, int N, double& score, 
+	int& depth, int& time) -			add one to the depth of recursion
+							for each available column
+								if the move is possible, make it
+								if the game is over and the winnner it the matching color (not a tie)
+									update the score parameter by subtracting a large integer plus the depth of recursion
+									subtract one from the depth
+								else call computerMove function with the opposite color
+								undo the move
+							return
+	
+
+
+	void computerMove(Scaffold& s, int color, 
+	int& winner, int N, double& score, 
+	int& depth, int& time)	-			does the same thing as the humanMove function expect it updates score by adding to it instead of subtracting from it
+									
+
+
+///////////////////////////////////////////////////////
+		     KNOWN BUGS
+//////////////////////////////////////////////////////
+
+- not entering a valid column integer
+
+- SmartPlayer::chooseMove() is not perfect and given enough test cases will not win the game as efficiently as possible
+
+- 
+
+///////////////////////////////////////////////////////
+		     TEST CASES
+//////////////////////////////////////////////////////
+
+When this is run it will run through several tests, play several different sized games, and print "Passed All tests"
+
+// test.cpp
+
+#include "provided.h"
+#include <string>
+#include <iostream>
+#include <cassert>
+using namespace std;
+
+void doScaffoldTests()
+{
+	Scaffold s(3, 2);
+	assert(s.cols() == 3 && s.levels() == 2 &&
+		s.numberEmpty() == 6);
+	assert(s.makeMove(1, RED));
+	assert(s.makeMove(1, BLACK));
+	assert(!s.makeMove(1, RED));
+	assert(s.numberEmpty() == 4);
+	assert(s.checkerAt(1, 1) == RED  &&  s.checkerAt(1, 2) == BLACK);
+	assert(s.checkerAt(2, 1) == VACANT);
+	s.display();
+}
+
+void doPlayerTests()
+{
+	HumanPlayer hp("Marge");
+	assert(hp.name() == "Marge"  &&  hp.isInteractive());
+	BadPlayer bp("Homer");
+	assert(bp.name() == "Homer"  &&  !bp.isInteractive());
+	SmartPlayer sp("Lisa");
+	assert(sp.name() == "Lisa"  &&  !sp.isInteractive());
+	Scaffold s(3, 2);
+	s.makeMove(1, RED);
+	s.makeMove(1, BLACK);
+	cout << "=========" << endl;
+	int n = hp.chooseMove(s, 3, RED);
+	cout << "=========" << endl;
+	assert(n == 2 || n == 3);
+	n = bp.chooseMove(s, 3, RED);
+	assert(n == 2 || n == 3);
+	n = sp.chooseMove(s, 3, RED);
+	assert(n == 2 || n == 3);
+}
+
+void doGameTests()
+{
+	BadPlayer bp1("Bart");
+	BadPlayer bp2("Homer");
+	Game g(2, 2, 2, &bp1, &bp2);
+	int winner;
+	assert(!g.completed(winner));
+	g.takeTurn();  // Red's first move
+	assert(!g.completed(winner) &&
+		(g.checkerAt(1, 1) == RED || g.checkerAt(2, 1) == RED));
+	g.takeTurn();  // Black's first move
+	assert(!g.completed(winner));
+	g.takeTurn();  // Red's second move; Red must win
+	assert(g.completed(winner) && winner == RED);
+}
+
+int main()
+{
+	doScaffoldTests();
+	doPlayerTests();
+	doGameTests();
+
+	int winner; 
+
+	SmartPlayer hp("name");
+	SmartPlayer sp("Computer");
+	
+	// because Red goes first, and both players play a perfect game, Black should never win
+
+	Game g1(3, 5, 5, &hp, &sp);
+	g1.play();
+	g1.completed(winner);
+	assert(winner != BLACK);
+
+	cout << endl << "This time I'll go first." << endl;
+	Game g2(4, 4, 3, &sp, &hp);
+	g2.play();
+	g2.completed(winner);
+	assert(winner != BLACK);
+
+	Game g3(5, 3, 2, &hp, &sp);
+	g3.play();
+	g3.completed(winner);
+	assert(winner != BLACK);
+
+	cout << endl << "This time I'll go first." << endl;
+	Game g4(5, 2, 5, &sp, &hp);
+	g4.play();
+	g4.completed(winner);
+	assert(winner != BLACK);
+
+	Game g5(6, 2, 3, &hp, &sp);	////
+	g5.play();
+	g5.completed(winner);
+	assert(winner != BLACK);
+
+	cout << endl << "This time I'll go first." << endl;
+	Game g6(10, 2, 2, &sp, &hp);
+	g6.play();		//////
+	g6.completed(winner);
+	assert(winner != BLACK);
+
+	Game g7(10, 1, 3, &hp, &sp);
+	g7.play();
+	g7.completed(winner);
+	assert(winner != BLACK);
+
+	cout << "Passed all tests" << endl;
+}
+
